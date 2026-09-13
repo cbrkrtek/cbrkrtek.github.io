@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevSecOps & Information Security Specialist | Portfolio</title>
+    <!-- Fonts: Inter for UI, JetBrains Mono for Code/Terminal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --card-bg: #121721;
+            --card-border: #1f2937;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --tag-bg: #1a2234;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* HEADER SECTION */
+        header {
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 32px;
+            margin-bottom: 32px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .role-subtitle {
+            font-size: 1.1rem;
+            color: var(--accent-blue);
+            font-family: var(--font-mono);
+            margin-bottom: 24px;
+        }
+
+        /* ABOUT ME BOX */
+        .about-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .about-title {
+            font-size: 0.85rem;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .about-text p {
+            font-size: 0.95rem;
+            color: #d1d5db;
+            margin-bottom: 12px;
+            line-height: 1.65;
+        }
+
+        .about-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* SOCIAL LINKS */
+        .social-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .social-btn {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-family: var(--font-mono);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .social-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        /* NAVIGATION TABS */
+        .nav-tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 32px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 12px 0;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s ease;
+            font-family: var(--font-sans);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--accent-blue);
+        }
+
+        /* TAB CONTENT */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* PROJECTS GRID */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
+        }
+
+        .project-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s ease;
+        }
+
+        .project-card:hover {
+            border-color: #374151;
+        }
+
+        /* TERMINAL / WINDOW FRAME */
+        .window-frame {
+            border-bottom: 1px solid var(--card-border);
+            background-color: #161b22;
+        }
+
+        .window-header {
+            height: 32px;
+            background-color: #0d1117;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 6px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .dot.red { background-color: #ff5f56; }
+        .dot.yellow { background-color: #ffbd2e; }
+        .dot.green { background-color: #27c93f; }
+
+        .window-title {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+
+        .project-image-container {
+            width: 100%;
+            height: 220px;
+            background-color: #0d1117;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .project-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .zoom-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(11, 14, 20, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .project-image-container:hover .zoom-overlay {
+            opacity: 1;
+        }
+
+        .project-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .project-date {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .project-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .project-desc {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            flex-grow: 1;
+            line-height: 1.55;
+        }
+
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            background-color: var(--tag-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            color: #9ca3af;
+        }
+
+        .project-link {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--accent-blue);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+
+        .project-link:hover {
+            text-decoration: underline;
+        }
+
+        /* CERTIFICATIONS TAB */
+        .cert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cert-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cert-info h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .cert-issuer {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .cert-badge {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.05);
+            padding: 4px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        /* LIGHTBOX MODAL */
+        .lightbox-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(6px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            cursor: zoom-out;
+        }
+
+        .lightbox-modal.active {
+            display: flex;
+        }
+
+        .lightbox-img {
+            max-width: 92%;
+            max-height: 90vh;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        /* FOOTER */
+        footer {
+            margin-top: 60px;
+            padding-top: 24px;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        @media (max-width: 650px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 20px 12px;
+            }
+            .cert-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER / BIO -->
+    <header>
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            <span>Available for DevSecOps & Security Engineering</span>
+        </div>
+        
+        <h1>Hleb Haushyn</h1>
+        <div class="role-subtitle">Information Security Specialist & DevSecOps Engineer</div>
+        
+        <!-- ABOUT ME SECTION -->
+        <div class="about-section">
+            <div class="about-title">// About Me</div>
+            <div class="about-text">
+                <p>
+                    I started in a <span class="highlight">SOC — SIEM, MITRE ATT&CK, EDR, incident response</span> — and got good at spotting things that had already gone wrong. At some point I realized I'd rather stop them from going wrong in the first place. That is what pulled me into <span class="highlight">DevSecOps</span>: securing the pipeline itself, before code ever gets near production.
+                </p>
+                <p>
+                    Most of my work lives at the intersection of <span class="highlight">CI/CD, cloud infrastructure, and Kubernetes</span>. I build GitHub Actions pipelines where security gates actually block the build — Bandit (SAST), Trivy (SCA/SBOMs), Gitleaks (Secrets), ZAP (DAST). On IaC, I write Terraform with security as default: remote state locking, OIDC auth, and plan-on-PR GitOps.
+                </p>
+                <p>
+                    Kubernetes is where I spend most of my time lately. I harden clusters from the ground up — RBAC least-privilege, NetworkPolicy segmentation, Kyverno admission policies, securityContext controls, and Pod Security Standards.
+                </p>
+                <p>
+                    The SOC background shapes how I build: I don't build controls to check a compliance box — I build them around how attackers actually move through a system. Everything I build is public on GitHub, documented start to finish.
+                </p>
+            </div>
+        </div>
+
+        <!-- SOCIAL LINKS -->
+        <div class="social-links">
+            <a href="https://github.com/cbrkrtek" target="_blank" class="social-btn">
+                <span>GitHub</span> ↗
+            </a>
+            <a href="https://www.linkedin.com/" target="_blank" class="social-btn">
+                <span>LinkedIn</span> ↗
+            </a>
+            <a href="https://medium.com/" target="_blank" class="social-btn">
+                <span>Medium Articles</span> ↗
+            </a>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('projects', event)">Projects</button>
+        <button class="tab-btn" onclick="switchTab('certifications', event)">Certifications</button>
+    </nav>
+
+    <!-- PROJECTS TAB -->
+    <main id="projects" class="tab-content active">
+        <div class="projects-grid">
+            
+            <!-- PROJECT 1 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">slsa-provenance-verification.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/slsa-provenance-verification.png')">
+                        <img src="images/slsa-provenance-verification.png" alt="SLSA Provenance vs Cosign" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">Sep 2026</div>
+                    <h2 class="project-title">SLSA Provenance vs Cosign Signing Lab</h2>
+                    <p class="project-desc">Built a GitHub Actions pipeline generating SLSA Build Level 3 provenance for container images, verified with slsa-verifier, and attempted forgery. Compared directly against Cosign keyless signing.</p>
+                    <div class="project-tags">
+                        <span class="tag">GitHub Actions</span>
+                        <span class="tag">SLSA Level 3</span>
+                        <span class="tag">Cosign</span>
+                        <span class="tag">GHCR</span>
+                        <span class="tag">Supply Chain</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek/slsa-provenance-lab/tree/main" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 2 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">supply-chain-admission-control.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/supply-chain-admission-control.png')">
+                        <img src="images/supply-chain-admission-control.png" alt="Software Supply Chain Security" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">Jul 2026</div>
+                    <h2 class="project-title">Software Supply Chain Security Lab</h2>
+                    <p class="project-desc">End-to-end supply chain lab featuring keyless image signing via Cosign/OIDC, Syft/Grype SBOM triage, Kyverno signature enforcement at K8s API server, ArgoCD GitOps, and Trivy Operator runtime scanning. Reduced CRITICAL CVEs from 3→0.</p>
+                    <div class="project-tags">
+                        <span class="tag">Cosign</span>
+                        <span class="tag">Sigstore</span>
+                        <span class="tag">Kyverno</span>
+                        <span class="tag">ArgoCD</span>
+                        <span class="tag">SBOM</span>
+                        <span class="tag">Trivy</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 3 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">k8s-kyverno-denyall.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/k8s-kyverno-denyall.png')">
+                        <img src="images/k8s-kyverno-denyall.png" alt="DevSecOps Engineering Lab" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">May 2026 – Jul 2026</div>
+                    <h2 class="project-title">DevSecOps Engineering Lab: Scalable Security Infra</h2>
+                    <p class="project-desc">Live hands-on lab spanning 4-gate CI/CD pipelines, Linux hardening, Prometheus/Grafana/Loki observability, Terraform IaC security, K8s RBAC, and 3-namespace Zero Trust isolation with 7 Kyverno policies.</p>
+                    <div class="project-tags">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag">Terraform</span>
+                        <span class="tag">Kyverno</span>
+                        <span class="tag">Ansible</span>
+                        <span class="tag">Prometheus</span>
+                        <span class="tag">Trivy</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek/DevOps-security-hands-on-labs" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 4 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">dast-zap-sqli-detection.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/dast-zap-sqli-detection.png')">
+                        <img src="images/dast-zap-sqli-detection.png" alt="OWASP Juice Shop Security Pipeline" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">Jun 2026</div>
+                    <h2 class="project-title">DevSecOps Pipeline — OWASP Juice Shop</h2>
+                    <p class="project-desc">Built a DevSecOps pipeline with Trivy (SCA), OWASP ZAP (DAST), and CycloneDX SBOMs uploading SARIF directly to GitHub Security. Blocked deployment on CRITICAL findings and mitigated SQLi/CORS at NGINX reverse proxy.</p>
+                    <div class="project-tags">
+                        <span class="tag">GitHub Actions</span>
+                        <span class="tag">OWASP ZAP</span>
+                        <span class="tag">NGINX</span>
+                        <span class="tag">Trivy</span>
+                        <span class="tag">CycloneDX</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 5 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">soc-incident-responce-workflow.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/soc-incident-responce-workflow.png')">
+                        <img src="images/soc-incident-responce-workflow.png" alt="Phishing & Incident Response" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">May 2026</div>
+                    <h2 class="project-title">End-to-End SOC Workflow: Phishing & Malware Analysis</h2>
+                    <p class="project-desc">Designed SOC infrastructure utilizing Velociraptor EDR, TheHive, and Cortex SOAR. Automated IoC enrichment via VirusTotal/AbuseIPDB APIs (reducing manual triage time by ~80%) and mapped TTPs to MITRE ATT&CK.</p>
+                    <div class="project-tags">
+                        <span class="tag">Velociraptor EDR</span>
+                        <span class="tag">TheHive</span>
+                        <span class="tag">Cortex SOAR</span>
+                        <span class="tag">MITRE ATT&CK</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek/SOC-analyst-hands-on-labs/tree/main/Incident%20Response%20Lifecycle%3A%20From%20Phishing%20Detection%20to%20Automated%20Remediation" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 6 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">elk-siem-threat-hunting.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/elk-siem-threat-hunting.png')">
+                        <img src="images/elk-siem-threat-hunting.png" alt="USB Data Exfiltration Investigation" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">May 2026</div>
+                    <h2 class="project-title">Incident Response: USB & LOLBins Data Exfiltration</h2>
+                    <p class="project-desc">Simulated domain admin compromise and USB exfiltration. Engineered KQL threat hunting queries in ELK SIEM to detect anomalous logins and rundll32.exe USB driver mounting. Authored a 6-stage IR Playbook.</p>
+                    <div class="project-tags">
+                        <span class="tag">ELK SIEM</span>
+                        <span class="tag">KQL</span>
+                        <span class="tag">Threat Hunting</span>
+                        <span class="tag">Cortex SOAR</span>
+                        <span class="tag">MITRE ATT&CK</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 7 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">windows-persistence-analysis.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/windows-persistence-analysis.png')">
+                        <img src="images/windows-persistence-analysis.png" alt="Windows Persistence Detection" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">May 2026</div>
+                    <h2 class="project-title">Endpoint Security: Windows Persistence Detection</h2>
+                    <p class="project-desc">Emulated registry & service persistence using Atomic Red Team (T1547.001, T1543.003). Audited Event ID 7045 and active TCP C2 connections to execute full Containment, Eradication, and Recovery lifecycle.</p>
+                    <div class="project-tags">
+                        <span class="tag">Atomic Red Team</span>
+                        <span class="tag">Windows Forensics</span>
+                        <span class="tag">Event Logs</span>
+                        <span class="tag">IR Lifecycle</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+            <!-- PROJECT 8 -->
+            <div class="project-card">
+                <div class="window-frame">
+                    <div class="window-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="window-title">elastic-siem-kql-dashboard.png</span>
+                    </div>
+                    <div class="project-image-container" onclick="openLightbox('images/elastic-siem-kql-dashboard.png')">
+                        <img src="images/elastic-siem-kql-dashboard.png" alt="Elastic SIEM Hybrid Compromise" class="project-image">
+                        <div class="zoom-overlay">🔍 Click to enlarge screenshot</div>
+                    </div>
+                </div>
+                <div class="project-body">
+                    <div class="project-date">Apr 2026</div>
+                    <h2 class="project-title">Adversary Lifecycle Analysis in Elastic SIEM</h2>
+                    <p class="project-desc">Full-cycle SOC investigation reconstructing adversary movement in hybrid infrastructure. Developed 5 KQL correlation rules, built 5 custom SIEM dashboards, and mapped TTPs directly to MITRE ATT&CK.</p>
+                    <div class="project-tags">
+                        <span class="tag">Elastic SIEM</span>
+                        <span class="tag">KQL Correlation</span>
+                        <span class="tag">Threat Detection</span>
+                        <span class="tag">Linux</span>
+                    </div>
+                    <a href="https://github.com/cbrkrtek" target="_blank" class="project-link">View Repository ↗</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- CERTIFICATIONS TAB -->
+    <!-- CERTIFICATIONS TAB -->
+    <section id="certifications" class="tab-content">
+        <div class="cert-list">
+            
+            <div class="cert-card">
+                <div class="cert-info">
+                    <h3>TryHackMe Security 1 (SEC1)</h3>
+                    <div class="cert-issuer">TryHackMe</div>
+                </div>
+                <span class="cert-badge">Verified / Active</span>
+            </div>
+        </div>
+    </section>
+
+    <div id="lightbox" class="lightbox-modal" onclick="closeLightbox()">
+        <img id="lightbox-img" class="lightbox-img" src="" alt="Enlarged screenshot">
+    </div>
+
+    <footer>
+        <p>© 2026 • Hleb  Haushyn.</p>
+    </footer>
+
+    <script>
+        function switchTab(tabId, event) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(button => button.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function openLightbox(imageSrc) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            lightboxImg.src = imageSrc;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        // Close lightbox on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+    </script>
+</body>
+</html>
