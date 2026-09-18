@@ -377,9 +377,20 @@
             color: var(--accent-green);
             border: 1px solid rgba(16, 185, 129, 0.3);
             background: rgba(16, 185, 129, 0.05);
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 4px;
             white-space: nowrap;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cert-badge:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--accent-green);
+            transform: translateY(-1px);
         }
 
         /* LIGHTBOX MODAL */
@@ -762,7 +773,9 @@
                     <h3>TryHackMe Security 1 (SEC1)</h3>
                     <div class="cert-issuer">TryHackMe</div>
                 </div>
-                <span class="cert-badge">Verified / Active</span>
+                <a href="https://assets.tryhackme.com/certification-certificate/69995211b745dcb0c7efc240.pdf" target="_blank" rel="noopener noreferrer" class="cert-badge">
+                    <span>Verified / View Certificate</span> ↗
+                </a>
             </div>
         </div>
     </section>
