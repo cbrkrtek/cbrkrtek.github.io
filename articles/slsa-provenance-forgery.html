@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Tried to Forge SLSA Provenance. The Verifier Never Even Looked at My Forgery. — Hleb Haushyn</title>
+    <meta name="description" content="A SLSA Build L3 provenance pipeline, a forged attestation, and a verifier flag that silently does nothing — what actually happened when I tried to bypass SLSA provenance verification.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+    <a href="../index.html#articles" class="back-link">← Back to articles</a>
+
+    <article>
+        <div class="article-header">
+            <div class="article-date">October 2026 · 5 min read</div>
+            <h1>I Tried to Forge SLSA Provenance. The Verifier Never Even Looked at My Forgery.</h1>
+            <p class="article-dek">I've got Cosign signing images in a couple of my pipelines. Out of curiosity, I decided to attack my own setup, and realized signing was answering a question I didn't really care about. Then the attack I'd planned went sideways in a way I didn't expect.</p>
+        </div>
+
+        <p class="article-body" style="margin-bottom: 28px;">Everything below is reproducible. Repo with raw logs and every screenshot: <a href="https://github.com/cbrkrtek/slsa-provenance-lab" target="_blank" style="color: var(--accent-blue);">github.com/cbrkrtek/slsa-provenance-lab</a></p>
+
+        <div class="callout">
+            <div class="callout-label">TL;DR / Key Finding</div>
+            <p><code>slsa-verifier verify-image</code>'s <code>--provenance-path</code> flag doesn't do what it looks like it does. It never substitutes a local file for verification — the command always fetches and checks whatever's cryptographically attached to the digest in the registry, silently ignoring the local argument entirely. Confirmed by feeding it both a forged JSON and <code>/dev/null</code> — identical <code>PASSED</code> result either way.</p>
+        </div>
+
+        <div class="article-body">
+
+            <h2>What signing actually tells you</h2>
+            <p>A Cosign signature says: <em>this hasn't changed since someone signed it</em>. That's the whole claim. It says nothing about who built it, from what code, or on what CI. If the identity or the job that signs is compromised, the attacker can sign whatever they want, and Cosign will call it valid because the signature really is valid.</p>
+            <p>SLSA provenance asks a different question: <em>was this built the way it claims, from this commit, by this exact workflow?</em></p>
+            <p>Signing proves nothing changed after the fact. Provenance is supposed to prove the build wasn't lied about.</p>
+
+            <h2>The pipeline</h2>
+            <p>A FastAPI app. On push to <code>main</code> it builds, pushes to GHCR, and generates SLSA Build L3 provenance through <code>slsa-github-generator</code>'s container workflow.</p>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/01-pipeline-success.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/01-pipeline-success.png" alt="build and provenance jobs, all green" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">build + provenance jobs, all green</div>
+            </div>
+
+            <p>A note before someone brings it up: yes, <code>build</code> and <code>provenance</code> live in the same YAML file. That doesn't break L3 isolation. The provenance job is a call to a pinned reusable workflow owned by the SLSA project. It runs on its own runner with its own OIDC identity, so my build job can't reach its process or its token. The isolation is about who owns the code and under which identity it runs, not about how many files you split the YAML into.</p>
+            <p>One caveat: this protects the integrity of the provenance. It doesn't promise that a compromised build step produces a clean image. Provenance tells you honestly what was built and from where.</p>
+
+            <h2>Verifying the real image</h2>
+            <pre><code>IMAGE="ghcr.io/cbrkrtek/slsa-lab-app"
+DIGEST="sha256:1c70c20db0f36b09dd0954a096050631fe3c41fa3f33e27443b4469a75a478da"
+
+slsa-verifier verify-image "${IMAGE}@${DIGEST}" \
+  --source-uri github.com/cbrkrtek/slsa-provenance-lab \
+  --source-branch main</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/03-verify-legit-pass.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/03-verify-legit-pass.png" alt="PASSED on legit image" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">PASSED on the real image</div>
+            </div>
+
+            <p><code>PASSED</code> alone doesn't tell you much, so here's what it checks: the signature is in the public Rekor log, the builder matches the pinned workflow, and the source traces back to this repo and branch. All of it, or it fails.</p>
+            <p>For comparison, the same image with Cosign:</p>
+
+            <pre><code>cosign verify-attestation \
+  --type slsaprovenance \
+  --certificate-identity-regexp ".*" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "${IMAGE}@${DIGEST}"</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/04-cosign-verify-attestation.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/04-cosign-verify-attestation.png" alt="cosign verify-attestation output" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">cosign verify-attestation output</div>
+            </div>
+
+            <p>Cosign shows the same builder identity in the certificate output. It just doesn't make you check it against anything. Note the <code>".*"</code> regex: it accepts any identity. <code>slsa-verifier</code> makes you declare what you expect up front and fails if reality doesn't match.</p>
+
+            <h2>Attack №1: push an image outside the pipeline</h2>
+            <p>The obvious real-world scenario: someone steals registry credentials and pushes an image directly, with no CI involved.</p>
+
+            <pre><code>docker build -t ghcr.io/cbrkrtek/slsa-lab-app:manual-push ./app
+docker push ghcr.io/cbrkrtek/slsa-lab-app:manual-push
+
+DIGEST_MANUAL=$(crane digest ghcr.io/cbrkrtek/slsa-lab-app:manual-push)
+
+slsa-verifier verify-image "ghcr.io/cbrkrtek/slsa-lab-app@${DIGEST_MANUAL}" \
+  --source-uri github.com/cbrkrtek/slsa-provenance-lab \
+  --source-branch main</code></pre>
+
+            <pre class="output"><code>FAILED: SLSA verification failed: no matching attestations:</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/05-verify-no-provenance-fail.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/05-verify-no-provenance-fail.png" alt="no attestation, rejected" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">no attestation, rejected</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/02-ghcr-verified-vs-unverified.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/02-ghcr-verified-vs-unverified.png" alt="GHCR: verified digest next to the manual-push tag" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">GHCR: verified digest next to the manual-push tag</div>
+            </div>
+
+            <p>Expected result. That digest never went through the pipeline, so no provenance is attached and there's nothing to verify. The boring attack is handled.</p>
+
+            <h2>Attack №2: forge the provenance itself</h2>
+            <p>This is the one I cared about. I downloaded the real provenance and decoded it:</p>
+
+            <pre><code>cosign download attestation "${IMAGE}@${DIGEST}" \
+  | jq -r '.payload' | base64 -d | jq '.' > real-provenance.json</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/06-download-attestation.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/06-download-attestation.png" alt="downloading the attestation" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">downloading the attestation</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/07-provenance-fields.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/07-provenance-fields.png" alt="subject, builder, source fields" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">subject, builder, source fields</div>
+            </div>
+
+            <p>Then I changed the source repo to a fake one and the commit hash to garbage, leaving everything else alone, and diffed to confirm nothing else moved:</p>
+
+            <pre><code><span class="diff-remove">&lt;         "uri": "git+https://github.com/cbrkrtek/slsa-provenance-lab@refs/heads/main",</span>
+---
+<span class="diff-add">&gt;         "uri": "git+https://github.com/attacker/evil-repo",</span>
+<span class="diff-remove">&lt;           "sha1": "c92ce306870dde70e216a961c38c4112a2bfc23e"</span>
+---
+<span class="diff-add">&gt;           "sha1": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"</span></code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/08-provenance-diff.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/08-provenance-diff.png" alt="two-line diff" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">the two-line diff</div>
+            </div>
+
+            <p>My assumption: pass this file via <code>--provenance-path</code>, the verifier checks the signature against the payload, sees the mismatch, rejects it. Textbook tamper detection.</p>
+
+            <pre><code>slsa-verifier verify-image "${IMAGE}@${DIGEST}" \
+  --source-uri github.com/cbrkrtek/slsa-provenance-lab \
+  --provenance-path forged-provenance.json</code></pre>
+
+            <pre class="output"><code>PASSED: Verified SLSA provenance</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/09-provenance-path-ignored-forged.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/09-provenance-path-ignored-forged.png" alt="forged file PASSED" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">the forged file — and it PASSED</div>
+            </div>
+
+            <p>I stared at that for a second. That's not supposed to happen.</p>
+            <p>Before getting excited (or panicked) about a bypass, I ran a sanity check: same command, but pointing at <code>/dev/null</code>.</p>
+
+            <pre><code>slsa-verifier verify-image "${IMAGE}@${DIGEST}" \
+  --source-uri github.com/cbrkrtek/slsa-provenance-lab \
+  --provenance-path /dev/null</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/10-provenance-path-ignored-control.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/10-provenance-path-ignored-control.png" alt="control test on /dev/null" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">the control test — /dev/null, same PASSED result</div>
+            </div>
+
+            <p>Same result.</p>
+
+            <h2>What this actually means</h2>
+            <p>My forgery wasn't good enough to slip past the signature check. It was never evaluated at all. In my testing, <code>--provenance-path</code> has no effect on <code>verify-image</code>: the tool appears to fetch whatever attestation is attached to that digest in the registry and verify that. (I'm inferring this from behavior; I didn't read the source.)</p>
+            <p>A few takeaways:</p>
+            <ul>
+                <li>I didn't find a bypass. The verdict is about the real attestation in the registry, and that one is genuine. A forged local file can't change it.</li>
+                <li>I didn't test the crypto either. The test I wanted — "does the signature catch tampered content?" — never happened. To run it for real, I'd have to attach a different attestation to the same digest in the registry, which is a much harder problem than editing JSON on my laptop.</li>
+                <li>There's a usability trap. The tool accepts a flag that does nothing, and says <code>PASSED</code>. Someone could easily believe they verified their local file when they didn't. If you script this, don't assume a flag is doing what its name suggests, and test with a known-bad input like I did.</li>
+            </ul>
+            <p>I could have quietly reworded this to sound like I proved what I set out to prove. Didn't feel right, and this turned out more useful anyway.</p>
+
+            <h2>Bonus: the transparency log entry</h2>
+            <pre><code>rekor-cli search --sha 1c70c20db0f36b09dd0954a096050631fe3c41fa3f33e27443b4469a75a478da</code></pre>
+            <pre class="output"><code>Found matching entries (listed by UUID):
+108e9186e8c5677ad7a17a74a009d6b79592942feae0e683c4f685928957b137f31ba1a0b949b22d</code></pre>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/slsa-provenance-forgery/11-rekor-search-uuid.png')">
+                        <img src="../images/articles/slsa-provenance-forgery/11-rekor-search-uuid.png" alt="rekor-cli search result" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">rekor-cli search result</div>
+            </div>
+
+        </div>
+
+        <div class="article-footer-links">
+            Raw logs and all screenshots: <a href="https://github.com/cbrkrtek/slsa-provenance-lab" target="_blank">github.com/cbrkrtek/slsa-provenance-lab</a>
+        </div>
+    </article>
+
+    <div id="lightbox" class="lightbox-modal" onclick="closeLightbox()">
+        <img id="lightbox-img" class="lightbox-img" src="" alt="Enlarged screenshot">
+    </div>
+
+    <footer>
+        <p>© 2026 Hleb Haushyn</p>
+    </footer>
+
+    <script>
+        function openLightbox(imageSrc) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            lightboxImg.src = imageSrc;
+            lightbox.classList.add('active');
+        }
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') closeLightbox();
+        });
+    </script>
+</body>
+</html>
