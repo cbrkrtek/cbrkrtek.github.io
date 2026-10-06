@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Configured Nexus's Documented Fix for Dependency Confusion. It Did Nothing. — Hleb Haushyn</title>
+    <meta name="description" content="Reproducing Dependency Confusion against a real Nexus group-repository topology, and finding out why the documented server-side fix silently doesn't apply.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+    <a href="../index.html#articles" class="back-link">← Back to articles</a>
+
+    <article>
+        <div class="article-header">
+            <div class="article-date">October 2026 · 6 min read</div>
+            <h1>I Configured Nexus's Documented Fix for Dependency Confusion. It Did Nothing.</h1>
+            <p class="article-dek">I wanted to reproduce Dependency Confusion properly — not the simplified two-registry demo everyone uses, but the actual topology that causes it in real companies: a group repository that merges a private registry and a public one behind one URL. Then I tried the fix Nexus documents for exactly this problem.</p>
+        </div>
+
+        <p class="article-body" style="margin-bottom: 28px;">Everything below is reproducible. Repo with raw logs and every screenshot: <a href="https://github.com/cbrkrtek/supply-chain-dependency-confusion" target="_blank" style="color: var(--accent-blue);">github.com/cbrkrtek/supply-chain-dependency-confusion</a></p>
+
+        <div class="callout">
+            <div class="callout-label">TL;DR / Key Finding</div>
+            <p>Nexus Routing Rules — the documented server-side fix for Dependency Confusion — only apply to traffic passing through <em>proxy</em> repositories. When the conflict happens inside a group repository between two <em>hosted</em> repositories (the setup in this lab, and a common one in real deployments), Routing Rules silently do nothing. In that configuration, client-side scoping isn't one of two valid defenses — it's the only one that works.</p>
+        </div>
+
+        <div class="article-body">
+
+            <h2>Why most write-ups don't reproduce the real bug</h2>
+            <p>Most Dependency Confusion demos use two isolated registries and just switch which one the client points at. That's not what actually causes the vulnerability inside a real org. The real cause is a <strong>Group Repository</strong>: a Nexus feature that transparently aggregates a private registry and a public one behind a single URL, so developers only configure one endpoint.</p>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/architecture.png')">
+                        <img src="../images/articles/dependency-confusion/architecture.png" alt="Project architecture diagram" class="project-image" style="object-fit: contain; background: #fff;">
+                    </div>
+                </div>
+                <div class="article-caption">group repository merges metadata from internal + public-sim, serves the highest version</div>
+            </div>
+
+            <p>A group repository resolves a package name by merging metadata from every member repository and returning the <strong>highest version found</strong> — with zero concept of which source is trusted. That behavior, not a misconfiguration, is the actual root cause. I wanted to reproduce exactly that, not a toy version of it.</p>
+
+            <h2>Setting it up</h2>
+            <p>Six repositories, provisioned via the Nexus REST API — three pairs (hosted-internal, hosted-public-sim, group) across npm and pip:</p>
+
+            <table style="width:100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9rem;">
+                <tr style="border-bottom: 1px solid var(--card-border);">
+                    <th style="text-align:left; padding: 8px 12px 8px 0; color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500;">Repo</th>
+                    <th style="text-align:left; padding: 8px 12px; color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500;">Type</th>
+                    <th style="text-align:left; padding: 8px 0; color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500;">Format</th>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--card-border);"><td style="padding:8px 12px 8px 0;"><code>npm-internal-hosted</code></td><td style="padding:8px 12px;">hosted</td><td style="padding:8px 0;">npm</td></tr>
+                <tr style="border-bottom: 1px solid var(--card-border);"><td style="padding:8px 12px 8px 0;"><code>npm-public-sim-hosted</code></td><td style="padding:8px 12px;">hosted</td><td style="padding:8px 0;">npm</td></tr>
+                <tr style="border-bottom: 1px solid var(--card-border);"><td style="padding:8px 12px 8px 0;"><code>npm-group</code></td><td style="padding:8px 12px;">group</td><td style="padding:8px 0;">npm</td></tr>
+                <tr style="border-bottom: 1px solid var(--card-border);"><td style="padding:8px 12px 8px 0;"><code>pypi-internal-hosted</code></td><td style="padding:8px 12px;">hosted</td><td style="padding:8px 0;">pypi</td></tr>
+                <tr style="border-bottom: 1px solid var(--card-border);"><td style="padding:8px 12px 8px 0;"><code>pypi-public-sim-hosted</code></td><td style="padding:8px 12px;">hosted</td><td style="padding:8px 0;">pypi</td></tr>
+                <tr><td style="padding:8px 12px 8px 0;"><code>pypi-group</code></td><td style="padding:8px 12px;">group</td><td style="padding:8px 0;">pypi</td></tr>
+            </table>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/01-empty-nexus-dashboard.png')">
+                        <img src="../images/articles/dependency-confusion/01-empty-nexus-dashboard.png" alt="Empty Nexus dashboard before setup" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">empty Nexus dashboard before setup</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/02-init-repos-script-run.png')">
+                        <img src="../images/articles/dependency-confusion/02-init-repos-script-run.png" alt="Provisioning script creating all six repositories" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">provisioning script creating all six repositories via the REST API</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/03-repositories-list-created.png')">
+                        <img src="../images/articles/dependency-confusion/03-repositories-list-created.png" alt="All repositories created and online" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">all repositories created and online</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/04-npm-internal-hosted-settings.png')">
+                        <img src="../images/articles/dependency-confusion/04-npm-internal-hosted-settings.png" alt="npm-internal-hosted repository configuration" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">npm-internal-hosted repository configuration</div>
+            </div>
+
+            <h2>The attack</h2>
+            <p>Setup: a legitimate package <code>internal-utils@1.0.0</code> sits in <code>npm-internal-hosted</code>. I published an imposter — <code>internal-utils@9.9.9</code>, same name, higher version — to <code>npm-public-sim-hosted</code>, simulating an attacker who registered the internal package name on the public registry. The client's <code>.npmrc</code> points at <code>npm-group</code>, which is the default, "convenient" configuration most developers actually use.</p>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/05-imposter-published-public-sim.png')">
+                        <img src="../images/articles/dependency-confusion/05-imposter-published-public-sim.png" alt="Imposter package 9.9.9 published to the public-sim registry" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">imposter package 9.9.9 published to the public-sim registry</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/06-npm-group-merge-view.png')">
+                        <img src="../images/articles/dependency-confusion/06-npm-group-merge-view.png" alt="npm-group listing both versions" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">npm-group listing both versions — proof the merge is the cause</div>
+            </div>
+
+            <p><code>npm-group</code> lists both versions side by side — <code>1.0.0</code> from the internal repo and <code>9.9.9</code> from the public-sim one — with no indication of which is trusted. That's the vulnerability by itself: resolution through the group picks the imposter's higher version over the real package, regardless of what either one does at runtime.</p>
+
+            <p>I also tried to go one step further and confirm code execution from the installed package through a postinstall banner script. That part didn't go cleanly — the banner script hit a shell-quoting bug and crashed with a <code>SyntaxError</code> before it could print anything, and the module wasn't left resolvable afterward either. So I'm not claiming confirmed code execution here; I'm only claiming what the registry itself shows plainly: the imposter version resolves and gets selected. That's the actual vulnerability. The runtime payload is a separate — and separately breakable — problem, and I'd rather undersell this than hand you a screenshot that implies more than it shows.</p>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/07-vulnerable-install-imposter-wins.png')">
+                        <img src="../images/articles/dependency-confusion/07-vulnerable-install-imposter-wins.png" alt="npm resolving toward the imposter version; postinstall banner script crashed on a shell-quoting bug" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">npm resolving through npm-group toward the imposter version — the demo's own postinstall banner script crashed on a quoting bug before confirming anything further</div>
+            </div>
+
+            <p>Same resolution behavior reproduced for pip against <code>pypi-internal-hosted</code> — cleanly this time, no banner script involved.</p>
+
+            <h2>Fix A — client-side scoping (it worked)</h2>
+            <ul>
+                <li><strong>npm:</strong> renamed the internal package to a scoped package, <code>@yourorg/internal-utils</code>. <code>.npmrc</code> routes the <code>@yourorg</code> scope directly to <code>npm-internal-hosted</code>, bypassing the group entirely.</li>
+                <li><strong>pip:</strong> replaced <code>--extra-index-url</code> (which searches every configured index and returns the highest version — the exact same vulnerable behavior) with a hard <code>--index-url</code> pointed only at <code>pypi-internal-hosted</code>.</li>
+            </ul>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/08-scoped-package-published.png')">
+                        <img src="../images/articles/dependency-confusion/08-scoped-package-published.png" alt="Scoped package @yourorg/internal-utils published" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">scoped package @yourorg/internal-utils published</div>
+            </div>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/09-protected-install-success.png')">
+                        <img src="../images/articles/dependency-confusion/09-protected-install-success.png" alt="Protected client installs the legitimate internal package" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">protected client installs and loads the legitimate internal package</div>
+            </div>
+
+            <p>The protected client resolved the trusted internal <code>1.0.0</code> in both ecosystems, even with the imposter still live on the public-sim registry. This one did exactly what I expected.</p>
+
+            <h2>Fix B — server-side Routing Rules (this is where it got interesting)</h2>
+            <p>Nexus Routing Rules let you block requests matching a pattern — I configured one to block anything matching <code>internal-.*</code>, applied at the server level. This is documented as <em>the</em> server-side answer to Dependency Confusion. I expected it to close the gap even for clients that weren't configured correctly.</p>
+            <p>It didn't block anything.</p>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/10-pip-vulnerable-vs-protected.png')">
+                        <img src="../images/articles/dependency-confusion/10-pip-vulnerable-vs-protected.png" alt="pip locked to the internal index only, install succeeds safely" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">pip locked to the internal index only — install succeeds safely</div>
+            </div>
+
+            <h2>What's actually going on</h2>
+            <p><strong>Nexus Routing Rules only apply to traffic passing through <em>proxy</em> repositories.</strong> My group repository merges two <em>hosted</em> repositories — not a proxy in the chain anywhere. The conflict happens entirely inside the group's merge logic, which routing rules never touch.</p>
+            <p>This matters because Routing Rules are documented, widely recommended, and genuinely effective — just not for this topology. A security team that reads the docs, configures a routing rule, and calls Dependency Confusion "handled" would be wrong, silently, in exactly the setup a lot of real Nexus instances actually run.</p>
+
+            <div class="article-screenshot">
+                <div class="window-frame">
+                    <div class="window-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                    <div class="project-image-container" onclick="openLightbox('../images/articles/dependency-confusion/11-download-yourorg-internal-utils.png')">
+                        <img src="../images/articles/dependency-confusion/11-download-yourorg-internal-utils.png" alt="Scoped package resolution, close-up" class="project-image">
+                    </div>
+                </div>
+                <div class="article-caption">scoped package resolution, close-up</div>
+            </div>
+
+            <p>In a hosted+hosted group setup, client-side scoping isn't one of two options. It's the only one that works.</p>
+
+            <h2>Reproducing it</h2>
+            <pre><code>docker compose up -d
+./nexus-setup/init-repos.sh</code></pre>
+            <p>Then diff <code>vulnerable-project/npm-demo/.npmrc</code> against <code>protected-project/npm-demo/.npmrc</code> — the entire fix lives in that one file. Full write-up in the repo's <code>docs/findings.md</code>.</p>
+
+        </div>
+
+        <div class="article-footer-links">
+            Raw logs and all screenshots: <a href="https://github.com/cbrkrtek/supply-chain-dependency-confusion" target="_blank">github.com/cbrkrtek/supply-chain-dependency-confusion</a>
+        </div>
+    </article>
+
+    <div id="lightbox" class="lightbox-modal" onclick="closeLightbox()">
+        <img id="lightbox-img" class="lightbox-img" src="" alt="Enlarged screenshot">
+    </div>
+
+    <footer>
+        <p>© 2026 Hleb Haushyn</p>
+    </footer>
+
+    <script>
+        function openLightbox(imageSrc) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            lightboxImg.src = imageSrc;
+            lightbox.classList.add('active');
+        }
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') closeLightbox();
+        });
+    </script>
+</body>
+</html>
